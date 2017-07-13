@@ -34,20 +34,8 @@ import org.apache.logging.log4j.Logger;
 
 class Wire {
 
-    /**
-     * Default length for new StringBuilder instances: {@value} .
-     */
-    private static final int DEFAULT_STRING_BUILDER_SIZE = 1024;
+    private static final int MAX_STRING_BUILDER_SIZE = 2048;
 
-    // TODO We should really pick this up from the ctor, and the client config? Or that too low level a detail?
-    private static final int MAX_STRING_BUILDER_SIZE = Math.max(DEFAULT_STRING_BUILDER_SIZE,
-            size("hc.client.wire.maxStringBuilderSize", 2 * 1024));
-
-    private static int size(final String property, final int defaultValue) {
-        final String str = System.getProperty(property);
-        return str == null ? defaultValue : Integer.parseInt(str);
-    }
-    
     private static final ThreadLocal<StringBuilder> threadLocal = new ThreadLocal<>();
 
     /**
@@ -58,19 +46,15 @@ class Wire {
     private static StringBuilder getStringBuilder() {
         StringBuilder result = threadLocal.get();
         if (result == null) {
-            result = new StringBuilder(DEFAULT_STRING_BUILDER_SIZE);
+            result = new StringBuilder(MAX_STRING_BUILDER_SIZE);
             threadLocal.set(result);
         }
-        trimToMaxSize(result);
+        // TODO Delegate to Log4j's 2.9 StringBuilds.trimToMaxSize() when it is released.
+        trimToMaxSize(result, MAX_STRING_BUILDER_SIZE);
         result.setLength(0);
         return result;
     }
 
-    private static void trimToMaxSize(final StringBuilder stringBuilder) {
-        // TODO Delegate to Log4j's 2.9 StringBuilds.trimToMaxSize() when it is released.
-        trimToMaxSize(stringBuilder, MAX_STRING_BUILDER_SIZE);
-    }
-    
     /**
      * Ensures that the char[] array of the specified StringBuilder does not exceed the specified number of characters.
      * This method is useful to ensure that excessively long char[] arrays are not kept in memory forever.
